@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Files Available</title>
+</head>
+<body>
+
+
+<h2>upload images</h2>
+ 
+    <form action="/add/book" method="POST" enctype="multipart/form-data">
+        <label>Title</label>
+        <input type="text" name="title">
+        <br>
+        <label>Description</label>
+        <input type="text" name="description" >
+        <br>
+        <label>Quantity</label>
+        <input type="number" name="quantity" >
+        <br>
+        <input type="file" name="file">
+        <button type="submit" onclick="upload()">Submit</button>
+    </form>
+
+    <script>
+        const upload = () =>{
+            const formData = new FormData()
+            const fileField =document.querySelector('input[type="file"]')
+            formData.append("file",fileField.files[0])
+
+
+            const response = fetch('http://localhost:3000/add/book',{
+            method: 'POST',
+            mode: 'cors',
+            cache: 'no-cache',
+            credentials:'same-origin',
+            body: formData
+        }).then(response => {
+        console.log(response)
+    })
+        }
+
+       
+    </script>
+
+</body>
+</html>
