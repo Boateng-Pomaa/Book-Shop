@@ -1,8 +1,8 @@
 import { bookModel } from '../models/booksSchema.js'
 import { userModel } from '../models/userSchema.js'
-import {cartModel} from '../models/cartSchema.js'
+import { cartModel } from '../models/cartSchema.js'
+import { orderModel } from '../models/orderSchema.js'
 import bcrypt from 'bcrypt'
-
 
 
 
@@ -30,7 +30,7 @@ export async function register(req, res) {
     // CREATING USER
 
     const user = await userModel.create({
-      email,
+      username,
       password
     })
     if (user) {
@@ -84,14 +84,15 @@ export async function login(req, res) {
 
 
 // view all books
-export async function viewAllBooks() {
+export async function viewAllBooks(req, res) {
   try {
     const books = await bookModel.find()
 
-    if (books) {
-      res.status(200).json({ books })
+    if (!books) {
+      res.status(404).send("Couldnt fetch data")
     }
-    res.status(404).send("Couldnt fetch data")
+    res.status(200).json({ books })
+
   } catch (error) {
     console.log(error)
     res.status(500).json({
@@ -105,18 +106,19 @@ export async function viewAllBooks() {
 export async function searchBooks(req, res) {
   try {
     const { keyword } = req.query
+    console.log(keyword)
     const books = await bookModel.find({
       $or: [
-        { title: { $regex: keyword, $options: 'i' } },
-        { description: { $regex: keyword, $options: 'i' } },
-        { author: { $regex: keyword, $options: 'i' } }
+        { title: { $regex: `${keyword}`, $options: 'i' } },
+        { description: { $regex: `${keyword}`, $options: 'i' } },
+        { author: { $regex: `${keyword}`, $options: 'i' } }
       ]
     })
 
-    if(books){
-      res.status(200).json({books})
+    if (!books) {
+      res.status(400).send("Unable to fetch data")
     }
-    res.status(400).send("Unable to fetch data")
+    res.status(200).json({ books })
   } catch (error) {
     console.log(error)
     res.status(500).json({
@@ -128,18 +130,20 @@ export async function searchBooks(req, res) {
 //add books to cart
 export async function addBookToCart(req, res) {
   try {
-    const { userId, bookId } = req.body
+
+    const { user, books, quantity } = req.body
+
+    console.log(user, books, quantity)
     const result = await cartModel.updateOne(
-      { user: userId },
-      { $addToSet: { books: bookId } },
+      { user: user },
+      { $addToSet: { books: books, quantity: quantity } },
       { upsert: true }
-    );
+    )
+    if (!result) {
+      res.status(400).send('Couldnt add book to cart')
 
-    if (result) {
-      res.status(200).send('Book added to cart successfully')
     }
-
-    res.status(400).send('Couldnt add book to cart')
+    res.status(200).send('Book added to cart successfully')
 
   } catch (error) {
     console.log(error)
@@ -154,9 +158,12 @@ export async function addBookToCart(req, res) {
 
 export async function viewCart(req, res) {
   try {
-    const { userId } = req.params
-    const cart = await cartModel.findOne({ user: userId }).populate('books')
-
+    const { id } = req.params
+    console.log(id)
+    const cart = await cartModel.findOne({ user: id }).populate({
+      path: 'books',
+      select: '-description -quantity -createdAt -updatedAt'
+    })
     if (!cart) {
       return res.status(400).send('Cart not found')
     }
@@ -177,16 +184,16 @@ export async function viewCart(req, res) {
 
 
 //clear cart
-export async function clearCart(req,res) {
+export async function clearCart(req, res) {
   try {
-    const { userId } = req.params
+    const { id } = req.params
+    console.log(id)
     const result = await cartModel.updateOne(
-      { user: userId },
-      { $set: { books: [] } }
+      { user: id },
+      { $set: { books: [], quantity: 0 } }
     )
-
-    if (result.nModified === 0) {
-      return res.status(404).send('No cart found')
+    if (!result) {
+      return res.status(400).send('No cart found')
     }
     res.status(200).send('Cart cleared successfully')
 
@@ -200,9 +207,40 @@ export async function clearCart(req,res) {
 
 
 ///placing order
-export async function placingOrder(req,res){
+
+function calculateOrder(books) {
+  let totalAmount = 0
+  for (const book of books) {
+    totalAmount += book.price
+  }
+  return totalAmount
+}
+export async function placingOrder(req, res) {
   try {
-    
+    const {id} = req.params
+    console.log(id)
+    const cart = await cartModel.findOne({ user: id }).populate({
+      path: 'books',
+      select: '-description -quantity -createdAt -updatedAt'
+    })
+
+    if (!cart || cart.books.length === 0) {
+      return res.status(400).send('Cart is empty')
+    }
+
+    const totalAmount = calculateOrder(cart.books)
+
+    const order = orderModel.create({
+      user: id,
+      books: cart.books,
+      amount: totalAmount,
+      address: req.body.address
+    })
+    if (!order) {
+      res.status(404).send('Order not successful')
+    }
+    res.status(200).send('Order placed successfully')
+
   } catch (error) {
     console.log(error)
     res.status(500).json({

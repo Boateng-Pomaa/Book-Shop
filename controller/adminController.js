@@ -1,6 +1,7 @@
 import { adminModel } from '../models/adminSchema.js'
 import { bookModel } from '../models/booksSchema.js'
 import bcrypt from 'bcrypt'
+import { orderModel } from '../models/orderSchema.js'
 
 
 
@@ -33,11 +34,12 @@ export async function adminLogin(req, res) {
 
 export async function uploadFile(req, res) {
     try {
-        const { title, description, quantity } = req.body
+        const { title, description, price, quantity } = req.body
         const { path } = req.file
         const file = await bookModel.create({
             title,
             description,
+            price,
             picture_path: path,
             quantity
         })
@@ -59,36 +61,37 @@ export async function uploadFile(req, res) {
 
 export async function updateBook(req, res) {
     try {
-        const { newTitle, description, quantity } = req.body
-        const {title} = req.params
-        let picture_path
+        const { title, description, quantity } = req.body
+        const { Title } = req.params
+        
+        let Path
         // checking if new image is being added
         if (req.file) {
-            picture_path = req.file.path
+            Path = req.file.path
         }
 
-        const bookExists = await bookModel.findOne({ title })
+        const bookExists = await bookModel.findOne({ title:Title })
 
         if (!bookExists) {
-            res.status(400).send({
-                message: 'Book not found'
-            })
+            res.status(400).send('Book not found')
         }
 
-        const book = await bookModel.updateOne({ title },{$set: {
-            title:newTitle,
-            description,
-            picture_path: path,
-            quantity
-        }})
+        const book = await bookModel.updateOne({ title:Title }, {
+            $set: {
+                title,
+                description,
+                picture_path: Path,
+                quantity
+            }
+        })
 
-        if(book){
-            console.log('Book updated')
-            res.status(200).send({
-                message:'Book updated successfully'
-            })
+        if (!book) {
+            res.status(400).send('Error while updating book')
         }
-        res.status(400).send('Error while updating book')
+        res.status(200).send({
+            message: 'Book updated successfully'
+        })
+
     } catch (error) {
         res.status(500).send('Error while updating book')
         console.log(error)
@@ -98,18 +101,18 @@ export async function updateBook(req, res) {
 
 
 //deleting
-export async function deleteBook(req,res){
+export async function deleteBook(req, res) {
     try {
-        const {title} = req.params
+        const { title } = req.params
 
-        const deleted = await bookModel.findOneAndDelete({title})
-        if(deleted){
-            console.log('Book updated')
-            res.status(200).send({
-                message:'Book deleted successfully'
-            })
+        const deleted = await bookModel.findOneAndDelete({ title })
+        if (!deleted) {
+            res.status(400).send('Error while deleting book')
         }
-        res.status(400).send('Error while deleting book')
+        res.status(200).send({
+            message: 'Book deleted successfully'
+        })
+
     } catch (error) {
         res.status(500).send('Error while deleting book')
         console.log(error)
@@ -117,3 +120,15 @@ export async function deleteBook(req,res){
 }
 
 // view list of orders
+export async function viewOrders(req, res) {
+    try {
+        const orders = await orderModel.find()
+
+        if(orders){
+            res.status(200).send(orders)
+        }
+    } catch (error) {
+        res.status(500).send('Error viewing orders')
+        console.log(error)
+    }
+}

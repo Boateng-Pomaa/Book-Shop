@@ -1,0 +1,29 @@
+@url = "http://localhost:3000"
+
+###login
+POST http://localhost:3000/login/admin HTTP/1.1
+Content-Type: application/json
+
+{
+    "username":"Linda",
+    "password":"12345"
+}
+
+
+###updating book
+
+PATCH  http://localhost:3000/editbook/Faceless HTTP/1.1
+Content-Type: application/json
+
+{
+    "title":"Faceless1"
+
+}
+
+
+####deleting book
+DELETE http://localhost:3000/delete/Faceless1 HTTP/1.1
+
+
+###viewing all orders
+GET http://localhost:3000/allorders HTTP/1.1
