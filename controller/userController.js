@@ -3,6 +3,7 @@ import { userModel } from '../models/userSchema.js'
 import { cartModel } from '../models/cartSchema.js'
 import { orderModel } from '../models/orderSchema.js'
 import bcrypt from 'bcrypt'
+import { response } from 'express'
 
 
 
@@ -217,7 +218,7 @@ function calculateOrder(books) {
 }
 export async function placingOrder(req, res) {
   try {
-    const {id} = req.params
+    const { id } = req.params
     console.log(id)
     const cart = await cartModel.findOne({ user: id }).populate({
       path: 'books',
@@ -241,6 +242,50 @@ export async function placingOrder(req, res) {
     }
     res.status(200).send('Order placed successfully')
 
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({
+      message: 'Internal server error'
+    })
+  }
+}
+
+///making payments
+export async function makePayment(req, res) {
+  try {
+    const { payment } = req.body
+    const { id } = req.params
+    console.log(payment)
+    const paid = await orderModel.updateOne({ user: id }, { $set: { payment, status: 'paid' } })
+
+    if(!paid){
+      res.status(404).send("failed to make payment")
+    }else{
+      await cartModel.updateOne(
+        { user: id },
+        { $set: { books: [], quantity: 0 } }
+      )
+      res.status(200).send('Payment successful')
+    }
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({
+      message: 'Internal server error'
+    })
+  }
+
+}
+
+
+//book purchased
+export async function showAllBookPurchased(req, res) {
+  try {
+    const {id} = req.params
+    const purchased = await orderModel.findOne({user:id,status:'paid'}).populate('books','title')
+    if(!purchased){
+      res.status(404).send('No Books Purchased')
+    }
+    res.status(200).json({purchased})
   } catch (error) {
     console.log(error)
     res.status(500).json({

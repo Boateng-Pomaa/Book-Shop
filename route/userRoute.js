@@ -1,7 +1,10 @@
 import express from 'express'
 const router = express.Router()
 import { check } from 'express-validator'
-import { register, login, viewAllBooks, searchBooks, addBookToCart, viewCart, clearCart, placingOrder } from '../controller/userController.js'
+import {
+    register, login, viewAllBooks, searchBooks, addBookToCart,
+    viewCart, clearCart, placingOrder, makePayment, showAllBookPurchased
+} from '../controller/userController.js'
 
 router.get('/allbooks', viewAllBooks)
     .post('/register', register)
@@ -11,7 +14,9 @@ router.get('/allbooks', viewAllBooks)
     .get('/viewcart/:id', viewCart)
     .delete('/clearcart/:id', clearCart)
     .post('/order/:id', placingOrder)
+    .post('/payment/:id', makePayment)
+    .get('/purchased/:id', showAllBookPurchased)
 
 
 
-    export default router
+export default router
