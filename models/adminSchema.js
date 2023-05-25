@@ -12,6 +12,9 @@ const adminSchema = new Schema({
         type: String,
         required: true,
         select:true
+    },
+    role:{
+      type:String
     }
 },
 {

@@ -11,7 +11,8 @@ program.command('create-admin <username> <password>')
         try {
             const admin = await adminModel.create({
                 username,
-                password
+                password,
+                role:"admin"
             })
             console.log(`admin created succcessfully: ${admin}`)
         } catch (error) {
@@ -27,7 +28,8 @@ program.command('create-admin <username> <password>')
         try {
             const user = await userModel.create({
                 username,
-                password
+                password,
+                role:"user"
             })
             console.log(`user created succcessfully> ${user}`)
         } catch (error) {
