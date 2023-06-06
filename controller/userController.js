@@ -3,7 +3,7 @@ import { userModel } from '../models/userSchema.js'
 import { cartModel } from '../models/cartSchema.js'
 import { orderModel } from '../models/orderSchema.js'
 import bcrypt from 'bcrypt'
-import { response } from 'express'
+
 
 
 
@@ -16,7 +16,7 @@ export async function register(req, res) {
 
     // Validation
     if (!username || !password) {
-      res.status(400).json({
+      return res.json({
         message: 'Please include all fields'
       })
     }
@@ -24,7 +24,7 @@ export async function register(req, res) {
     const userExists = await userModel.findOne({ username })
 
     if (userExists) {
-      res.status(400).send({
+     return res.json({
         message: 'User already exists'
       })
     }
@@ -42,13 +42,13 @@ export async function register(req, res) {
 
 
     } else {
-      res.status(400).json({
+      return res.status(400).json({
         message: "Registration unsuccessful"
       })
     }
   } catch (error) {
     console.log(error)
-    res.status(500).json({
+    return res.status(500).json({
       message: 'Internal server error'
     })
   }
@@ -71,13 +71,13 @@ export async function login(req, res) {
       })
 
     } else {
-      res.status(400).json({
+      return res.status(400).json({
         message: 'Invalid Credentials'
       })
     }
   } catch (error) {
     console.log(error)
-    res.status(500).json({
+    return res.status(500).json({
       message: 'Internal server error'
     })
   }
@@ -90,13 +90,13 @@ export async function viewAllBooks(req, res) {
     const books = await bookModel.find()
 
     if (!books) {
-      res.status(404).send("Couldnt fetch data")
+      return res.status(404).send("Couldnt fetch data")
     }
     res.status(200).json({ books })
 
   } catch (error) {
     console.log(error)
-    res.status(500).json({
+    return res.status(500).json({
       message: 'Internal server error'
     })
   }
@@ -117,7 +117,7 @@ export async function searchBooks(req, res) {
     })
 
     if (!books) {
-      res.status(400).send("Unable to fetch data")
+     return res.status(400).send("Unable to fetch data")
     }
     res.status(200).json({ books })
   } catch (error) {
@@ -141,7 +141,7 @@ export async function addBookToCart(req, res) {
       { upsert: true }
     )
     if (!result) {
-      res.status(400).send('Couldnt add book to cart')
+      return res.status(400).send('Couldnt add book to cart')
 
     }
     res.status(200).send('Book added to cart successfully')
@@ -160,7 +160,6 @@ export async function addBookToCart(req, res) {
 export async function viewCart(req, res) {
   try {
     const { id } = req.params
-    console.log(id)
     const cart = await cartModel.findOne({ user: id }).populate({
       path: 'books',
       select: '-description -quantity -createdAt -updatedAt'
@@ -280,7 +279,8 @@ export async function makePayment(req, res) {
 //book purchased
 export async function showAllBookPurchased(req, res) {
   try {
-    const {id} = req.params
+    //todo: will change this to req.user.id
+    const {id} = req.user.id
     const purchased = await orderModel.findOne({user:id,status:'paid'}).populate('books','title')
     if(!purchased){
       res.status(404).send('No Books Purchased')
